@@ -1,0 +1,92 @@
+import os, sequtils, strutils
+import std/unicode
+type
+  Folder* =  ref object
+    depth*: int
+    path*: var string
+    letter*: string
+
+
+proc createNest*(path: string, level: int) =
+  ## Used to create a nested folder system
+  ## path is the path to the start of the foldr system
+  ## ie data/a/
+  ## level is how many levels to nest it, you should not use more than 5
+
+  var
+    sym: seq[char] = toSeq("abcdefghijklmnopkurstuvwxyz01234567890".items)
+    i: int
+    fpath: string
+  for l in 0..level:
+
+    for it in sym.mapIt($it):
+      fpath = path & it & "/"
+      if i != 0:
+        fpath = fpath & it & "/"
+      createDir(fpath)
+      for it in sym.mapIt($it):
+        createDir(fpath & it & "/")
+    i += 1
+
+
+proc sortLine*(path, line: string, level: int): string =
+  ## used to sort the lines into a nested folder system.
+  ## line is a email:pass line.
+  ## level is how man chars out of thee email to use as the index
+  ## be sure to use the same level as you do for the nesting!
+
+  var
+    email: string
+    password: string
+    lineSplit1: string
+    lineSplit2: string
+    letters: seq[char]
+    # used to determin how far a line goes
+    level_path: int
+    file_path: string
+    fpath: string
+
+  if path.len == 0:
+    raise newException(ValueError, "The path is empty")
+  else:
+    fpath = path
+    # lets see if its in email:pass or pass:email
+  try:
+    lineSplit1 = line.split(":")[0]
+    lineSplit2 = line.split(":")[1]
+    if lineSplit1.contains("@"):
+      email = linesplit1
+    else:
+      email = linesplit2
+    letters = toSeq(email.items)
+  except ValueError:
+    echo("invalid line: " & line)
+    # geting the level
+
+  var i = 0
+  # lets get the level
+  for letter in letters.mapIt($it):
+    if letter.isAlpha():
+      level_path += 1
+      i += 1
+      if i == level: break
+
+
+  var x = 0
+  # creating the path
+  # a path should look like this
+  # data/a/b/c/c.txt
+  for letter in letters:
+    if x == level_path:
+      fpath = fpath & $letters[level_path] & ".txt"
+      fpath = fpath & $letter
+      x += 1
+      when isMainModule:
+        echo(fpath, " ", level_path)
+    
+
+
+
+
+when isMainModule:
+  createNest("data/", 5)
