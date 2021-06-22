@@ -7,28 +7,32 @@ type
     letter*: string
 
 
-proc createNest*(path: string, level: int) =
+proc createNest*(path: string) =
   ## Used to create a nested folder system
   ## path is the path to the start of the foldr system
   ## ie data/a/
-  ## level is how many levels to nest it, you should not use more than 5
 
   var
-    sym: seq[char] = toSeq("abcdefghijklmnopkurstuvwxyz01234567890".items)
-    i: int
+    sym: seq[char] = toSeq("abcdefghijklmnopqrstuvwxyz01234567890".items)
     fpath: string
-  for l in 0..level:
+  if path.endsWith("/"):
+    fpath = path
+  else:
+    fpath = path & "/"
+  createDir(fpath)
+  # vars used for nesting
+  var fpath0, fpath1, fpath2: string
 
-    for it in sym.mapIt($it):
-      fpath = path & it & "/"
-      if i != 0:
-        fpath = fpath & it & "/"
-      createDir(fpath)
-      for it in sym.mapIt($it):
-        createDir(fpath & it & "/")
-    i += 1
-
-proc sortLine*(path, line: string, level: int) =
+  for it in sym.mapIt($it):
+    fpath0  = fpath & it & "/"
+    createDir(fpath0)
+    for l1 in sym.mapIt($it):
+      fpath1 = fpath0 & l1 & "/"
+      createDir(fpath1)
+      for l2 in sym.mapIt($it):
+        fpath2 = fpath1 & l2 & "/"
+        createDir(fpath2)
+proc sortLineA*(path, line: string) =
   ## used to sort the lines into a nested folder system.
   ## line is a email:pass line.
   ## level is how man chars out of thee email to use as the index
@@ -45,6 +49,7 @@ proc sortLine*(path, line: string, level: int) =
     level_path: int
     #file_path: string
     fpath: string
+    outLine: string
 
   if path.contains("/"):
     fpath = path
@@ -56,54 +61,68 @@ proc sortLine*(path, line: string, level: int) =
     lineSplit2 = line.split(":")[1]
     if lineSplit1.contains("@"):
       email = linesplit1
-      email_username = email.split("@")[0]
+      email_username = email.split("@")[0].toLower()
       password = linesplit2
     else:
       email = linesplit2
-      email_username = email.split("@")[0]
+      email_username = email.split("@")[0].toLower()
       password = linesplit1
 
     letters = toSeq(email_username.items)
   except ValueError:
     echo("invalid line: " & line)
     # geting the level
-
-  var i = 0
+  except IndexDefect:
+    discard
   # lets get the level
-  for letter in letters.mapIt($it):
+  try:
+    for letter in letters[0..2]:
+      if isAlphaNumeric(letter) == true:
+        level_path += 1
+      else:
+        break
+  except IndexDefect:
+    discard
 
-    if letter == "@" or letter == "." or letter == "!" or letter == "-" or letter == "_":
-        continue
-    if level_path == email_username.len: break
-    if i == level: break
-    if letter.isAlpha():
-      level_path += 1
-      i += 1
-
-
-  var x = 0
-  # creating the path
+    # creating the path
   # a path should look like this
   # data/a/b/c/c.txt
-  for letter in letters:
-    if $letter == "@" or $letter == "." or $letter == "!" or $letter == "-" or $letter == "_": continue
-    if x == level_path:
-      fpath = fpath & $letters[x] & ".txt"
-      if fpath.contains("."):
-        break
-      else:
-        level_path = x - 1
-        fpath = fpath & "../" & $letters[level_path] & ".txt"
-        break
-    fpath = fpath &  $letter & "/"
-    x += 1
-  when isMainModule:
-    echo(fpath, " ", level_path)
-    echo(email, ":", password)
+  var letter: char
+  if level_path == 0:
+    fpath = fpath & "outliers.txt"
+  if level_path == 1:
+    letter = letters[0]
+    if isAlphaNumeric(letter) == true:
+      fpath = fpath & "/" & "symbols.txt"
+    else:
+      fpath = fpath & "/" & "symbols.txt"
+  if level_path == 2:
+    letter = letters[1]
+    if isAlphaNumeric(letter) == true:
+      fpath = fpath & $letters[0] & "/"  & "symbols.txt"
+    else:
+      fpath = fpath & $letters[0] & "/" & "symbols.txt"
+  if level_path == 3:
+    letter = letters[2]
+    if isAlphaNumeric(letter) == true:
+      fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & ".txt"
+    else:
+      fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & "/" & "symbols.txt"
+  outLine = email & ":" & password & "\n"
+  try:
+    let outFile = open(fpath, fmAppend)
+    outFile.write(outLine)
+    defer: outFile.close()
+  except IOError:
+    echo(email, ":", fpath)
+    let outFile = open(fpath, fmWrite)
+    outFile.write(outLine)
+    defer: outFile.close()
 
-proc sortLine*(path, line: string) =
+proc sortLineB*(path, line: string) =
   ## Sort line to files for split sqlite3 based on first letter of email.
   ## path is path to the directory wher the txt files will be stored.
+  ## returns a string
   var
     fpath: string
     email: string
@@ -111,7 +130,7 @@ proc sortLine*(path, line: string) =
     email_username: string
     lineSplit1: string
     lineSplit2: string
-
+    outLine: string
   if path.contains("/"):
     fpath = path
   else:
@@ -122,28 +141,53 @@ proc sortLine*(path, line: string) =
     lineSplit2 = line.split(":")[1]
     if lineSplit1.contains("@"):
       email = linesplit1
-      email_username = email.split("@")[0]
+      email_username = email.split("@")[0].toLower()
       password = linesplit2
     else:
       email = linesplit2
       email_username = email.split("@")[0]
       password = linesplit1
   except KeyError:
-    discard
+    echo(line)
+  except IndexDefect:
+    echo(line)
   var first_char = toSeq(email_username)[0]
   fpath = path & "/" & $first_char & ".txt"
-  when isMainModule:
-    echo(fpath)
+  outLine = email & ":" & password & "\n"
+  try:
+    let outFile = open(fpath, fmAppend)
+    defer: outFile.close()
+    outFile.write(outLine)
+  except IOError:
+    let outFile = open(fpath, fmWrite)
+    outFile.write(outLine)
+    defer: outFile.close()
+proc comboSortA(path, input_file: string) =
+  # sorts a input file to a nested folder system
+  let inputFile = open(input_file, fmRead)
+  for line in inputFile.lines:
+    try:
+      sortLineA(path, line)
+    except IndexDefect:
+      echo(line)
+
+proc comboSortB(path, input_file: string) =
+  let inputFile = open(input_file, fmRead)
+  for line in inputFile.lines:
+    try:
+      sortLineB(path, line)
+    except IndexDefect:
+      echo(line)
+
 
 when isMainModule:
   echo("Running tests")
-  createNest("data/", 5)
-  echo("test 1 complete")
-  sortLine("data", "test@gmail.com:password", 3)
-  echo("test 2 complete")
-  sortLine("data", "te.st@gmail.com:password", 3)
-  echo("test 3 complete")
-  sortLine("data/", "passwordFirs:test@gmail.com", 3)
-  echo("test 5 complete")
-  sortLine("data", "test@gmail.com:password")
+  echo("creating folder forest")
+  #createNest("data-testing/")
+  echo("creating split dir")
+  createDir("/tmp/data/")
+  echo("testing split sqlite3")
+  comboSortB("/tmp/data", "./test.txt")
+  #echo("testing nested folders")
+  comboSortA("data-testing", "test.txt")
   echo("all tests complete")
