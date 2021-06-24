@@ -1,5 +1,6 @@
 import os, sequtils, strutils
-import std/unicode
+import memfiles
+import ../sqlite/splitDb
 type
   Folder* =  ref object
     depth*: int
@@ -32,6 +33,18 @@ proc createNest*(path: string) =
       for l2 in sym.mapIt($it):
         fpath2 = fpath1 & l2 & "/"
         createDir(fpath2)
+
+proc checkLine*(path, email: string): bool =
+  ## used to check a file for duplicates before writing
+  var mfile = memfiles.open(path, mode = fmReadWrite)
+  defer: mfile.close()
+  for line in lines(mfile):
+    if line.len == 0: break
+    if line == email:
+      break
+      result = true
+  result = false
+
 proc sortLineA*(path, line: string) =
   ## used to sort the lines into a nested folder system.
   ## line is a email:pass line.
@@ -110,14 +123,16 @@ proc sortLineA*(path, line: string) =
       fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & "/" & "symbols.txt"
   outLine = email & ":" & password & "\n"
   try:
-    let outFile = open(fpath, fmAppend)
-    outFile.write(outLine)
-    defer: outFile.close()
-  except IOError:
-    echo(email, ":", fpath)
-    let outFile = open(fpath, fmWrite)
-    outFile.write(outLine)
-    defer: outFile.close()
+    if fileExists(fpath) == false:
+      let outFile = system.open(fpath, fmWrite)
+      defer: outfile.close()
+      outFile.write(outLine)
+    else:
+        let outFile = system.open(fpath, fmAppend)
+        outFile.write(outLine)
+        defer: outFile.close()
+  except OSError:
+    echo(fpath)
 
 proc sortLineB*(path, line: string) =
   ## Sort line to files for split sqlite3 based on first letter of email.
@@ -143,6 +158,7 @@ proc sortLineB*(path, line: string) =
       email = linesplit1
       email_username = email.split("@")[0].toLower()
       password = linesplit2
+
     else:
       email = linesplit2
       email_username = email.split("@")[0]
@@ -155,16 +171,19 @@ proc sortLineB*(path, line: string) =
   fpath = path & "/" & $first_char & ".txt"
   outLine = email & ":" & password & "\n"
   try:
-    let outFile = open(fpath, fmAppend)
+    let outFile = system.open(fpath, fmAppend)
     defer: outFile.close()
     outFile.write(outLine)
   except IOError:
-    let outFile = open(fpath, fmWrite)
+    let outFile = system.open(fpath, fmWrite)
     outFile.write(outLine)
     defer: outFile.close()
 proc comboSortA(path, input_file: string) =
-  # sorts a input file to a nested folder system
-  let inputFile = open(input_file, fmRead)
+  ## sorts a input file to a nested folder system
+  ## A folder nest looks like data/a/b/c/d.txt
+  ##
+  ## Example comboSortA("data", "test.txt")
+  let inputFile = system.open(input_file, fmRead)
   for line in inputFile.lines:
     try:
       sortLineA(path, line)
@@ -172,22 +191,56 @@ proc comboSortA(path, input_file: string) =
       echo(line)
 
 proc comboSortB(path, input_file: string) =
-  let inputFile = open(input_file, fmRead)
+  ## Sort a input file into a set of files in <path> dir
+  ## filename is based on the first letter of the email
+  ## Example comboSortB("data", "test.txt")
+  let inputFile = system.open(input_file, fmRead)
   for line in inputFile.lines:
     try:
       sortLineB(path, line)
     except IndexDefect:
       echo(line)
 
+proc splitSqlite*(path, input_file, tmp_dir: string) =
+  ## Splits a input file into a set of slite3 database files
+  ## example: data/a.db, data/b.db. the filename is determined by the first letter
+  ## of the email.
+  ## All lines must be in email:pass or pass:email and seperatd by a : or a defined sep
+  ## Usage: splitSqlite(<path to output>, <input txt file>, <name of tmp dir>)
+  ##
+  var tpath: string
+  if tmp_dir.contains("/"):
+    tpath = tmp_dir
+  else:
+    tpath = tmp_dir & "/"
+  createDir(tmp_dir)
+  comboSortB(tmp_dir, input_file)
+  echo("inserting data into sqlite3 databases")
+  for file in walkFiles(tpath & "*.txt"):
+    echo(file)
+    var fpath = expandFilename(file)
+    let tFile = system.open(fpath, fmRead)
+    var
+      buf: seq[string]
+      i: int
+    for line in tFile.lines:
+      if i < 500:
+        buf.add(line)
+        i += 1
+      if i == 500:
+        for email in buf.items:
+          echo(email)
+        i = 0
 
 when isMainModule:
   echo("Running tests")
   echo("creating folder forest")
-  #createNest("data-testing/")
+  createNest("data-testing/")
   echo("creating split dir")
-  createDir("/tmp/data/")
+  #createDir("/tmp/data/")
   echo("testing split sqlite3")
-  comboSortB("/tmp/data", "./test.txt")
+  #comboSortB("/tmp/data", "./test.txt")
   #echo("testing nested folders")
-  comboSortA("data-testing", "test.txt")
+  #comboSortA("data-testing", "test.txt")
+  splitSqlite("data/", "test.txt", "data/tmp/")
   echo("all tests complete")
