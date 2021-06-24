@@ -44,6 +44,29 @@ proc checkLine*(path, email: string): bool =
       break
       result = true
   result = false
+proc parseLine*(line: string): Email =
+   var
+    email: string
+    email_username: string
+    password: string
+    lineSplit1: string
+    lineSplit2: string
+    nEmail: Email
+   try:
+    lineSplit1 = line.split(":")[0]
+    lineSplit2 = line.split(":")[1]
+   except ValueError:
+    echo("invalid line: " & line)
+    # geting the level
+   except IndexDefect:
+     discard
+   if lineSplit1.contains("@"):
+     email = linesplit1
+     nEmail = Email(username: email.split("@")[0], domain: email.split("@")[1], password: linesplit2, email: email)
+   else:
+    email = linesplit2
+    nEmail = Email(username: email.split("@")[0], domain: email.split("@")[1], password: linesplit1, email: email)
+   result = nEmail
 
 proc getPath*(line, path: string): string =
   ## Used to return a path for a line in a nested folder
@@ -74,13 +97,13 @@ proc getPath*(line, path: string): string =
   if level_path == 1:
     letter = letters[0]
     if isAlphaNumeric(letter) == true:
-      fpath = fpath & "/" & "symbols.txt"
+      fpath = fpath & "/" & $letter & ".txt"
     else:
       fpath = fpath & "/" & "symbols.txt"
   if level_path == 2:
     letter = letters[1]
     if isAlphaNumeric(letter) == true:
-      fpath = fpath & $letters[0] & "/"  & "symbols.txt"
+      fpath = fpath & $letters[0] & "/"  & $letters[1] & ".txt"
     else:
       fpath = fpath & $letters[0] & "/" & "symbols.txt"
   if level_path == 3:
@@ -90,47 +113,26 @@ proc getPath*(line, path: string): string =
     else:
       fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & "/" & "symbols.txt"
   result = path & fpath
-  return result
+  return result.toLower()
 proc sortLineA*(path: var string, line: string) =
   ## used to sort the lines into a nested folder system.
   ## line is a email:pass line.
   ## level is how man chars out of thee email to use as the index
   ## be sure to use the same level -1 as you do for the nesting!
-
   var
-    email: string
-    email_username: string
-    password: string
-    lineSplit1: string
-    lineSplit2: string
-    fpath: string
-    outLine: string
+    fpath, outLine: string
 
   if path.contains("/"):
     discard
   else:
     path = path & "/"
   # lets see if its in email:pass or pass:email
-  try:
-    lineSplit1 = line.split(":")[0]
-    lineSplit2 = line.split(":")[1]
-    if lineSplit1.contains("@"):
-      email = linesplit1
-      email_username = email.split("@")[0].toLower()
-      password = linesplit2
-    else:
-      email = linesplit2
-      email_username = email.split("@")[0].toLower()
-      password = linesplit1
+  var parsedLine = parseLine(line)
 
-  except ValueError:
-    echo("invalid line: " & line)
-    # geting the level
-  except IndexDefect:
-    discard
-  fpath = getPath(email_username, path)
+  # lets get th full path
+  fpath = getPath(parsedLine.username.toLower, path)
 
-  outLine = email & ":" & password & "\n"
+  outLine = parsedLine.email & ":" & parsedLine.password & "\n"
   try:
     if fileExists(fpath) == false:
       let outFile = system.open(fpath, fmWrite)
