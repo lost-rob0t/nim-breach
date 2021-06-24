@@ -53,7 +53,9 @@ proc getPath*(line, path: string): string =
     fpath: string
     letters: seq[char]
 
-
+  if line.len < 2:
+    result = path & "outliers.txt" # dummy result to keep it from crashing
+    return result
   letters = toSeq(line.items)
   try:
     for letter in letters[0..2]:
@@ -125,6 +127,7 @@ proc sortLineA*(path: var string, line: string) =
   except IndexDefect:
     discard
   fpath = getPath(email_username, path)
+
   outLine = email & ":" & password & "\n"
   try:
     if fileExists(fpath) == false:
