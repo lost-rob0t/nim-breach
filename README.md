@@ -1,4 +1,4 @@
 # nim-base
 
-A base query rewrite in nim.
+A BaseQuery/breach-sabre rewrite in nim.
 https://github.com/g666gle/BaseQuery
