@@ -44,7 +44,7 @@ proc checkLine*(path, email: string): bool =
       break
       result = true
   result = false
-proc getPath*(line: string): string =
+proc getPath*(line, path: string): string =
   ## Used to return a path for a line in a nested folder
   ##
   ## Example: x = getPath("test@gmail.com")
@@ -86,8 +86,8 @@ proc getPath*(line: string): string =
       fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & ".txt"
     else:
       fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & "/" & "symbols.txt"
-
-proc sortLineA*(path, line: string) =
+  result = path & fpath
+proc sortLineA*(path: var string, line: string) =
   ## used to sort the lines into a nested folder system.
   ## line is a email:pass line.
   ## level is how man chars out of thee email to use as the index
@@ -103,9 +103,9 @@ proc sortLineA*(path, line: string) =
     outLine: string
 
   if path.contains("/"):
-    fpath = path
+    discard
   else:
-    fpath = path & "/"
+    path = path & "/"
   # lets see if its in email:pass or pass:email
   try:
     lineSplit1 = line.split(":")[0]
@@ -124,7 +124,7 @@ proc sortLineA*(path, line: string) =
     # geting the level
   except IndexDefect:
     discard
-  fpath = getPath(email_username)
+  fpath = getPath(email_username, path)
   outLine = email & ":" & password & "\n"
   try:
     if fileExists(fpath) == false:
@@ -136,6 +136,9 @@ proc sortLineA*(path, line: string) =
         outFile.write(outLine)
         defer: outFile.close()
   except OSError:
+    echo(fpath)
+  except IOError:
+    echo(line)
     echo(fpath)
 
 proc sortLineB*(path, line: string) =
@@ -190,7 +193,8 @@ proc comboSortA(path, input_file: string) =
   let inputFile = system.open(input_file, fmRead)
   for line in inputFile.lines:
     try:
-      sortLineA(path, line)
+      var path2 = path
+      sortLineA(path2, line)
     except IndexDefect:
       echo(line)
 
@@ -238,13 +242,15 @@ proc splitSqlite*(path, input_file, tmp_dir: string) =
 
 when isMainModule:
   echo("Running tests")
+  echo("Test get nesting")
+  echo(getPath("test@gmail.com", "data-testing/"))
   echo("creating folder forest")
   createNest("data-testing/")
   echo("creating split dir")
-  createDir("split-test")
-  echo("testing split sqlite3")
-  comboSortB("split-test", "./test.txt")
+  #createDir("split-test")
+  #echo("testing split sqlite3")
+  #comboSortB("split-test", "./test.txt")
   echo("testing nested folders")
   comboSortA("data-testing", "test.txt")
-  splitSqlite("data/", "test.txt", "data/tmp/")
+  #splitSqlite("data/", "test.txt", "data/tmp/")
   echo("all tests complete")
