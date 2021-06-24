@@ -44,6 +44,7 @@ proc checkLine*(path, email: string): bool =
       break
       result = true
   result = false
+
 proc getPath*(line, path: string): string =
   ## Used to return a path for a line in a nested folder
   ##
@@ -55,7 +56,7 @@ proc getPath*(line, path: string): string =
 
   if line.len < 2:
     result = path & "outliers.txt" # dummy result to keep it from crashing
-    return result
+
   letters = toSeq(line.items)
   try:
     for letter in letters[0..2]:
@@ -89,6 +90,7 @@ proc getPath*(line, path: string): string =
     else:
       fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & "/" & "symbols.txt"
   result = path & fpath
+  return result
 proc sortLineA*(path: var string, line: string) =
   ## used to sort the lines into a nested folder system.
   ## line is a email:pass line.
