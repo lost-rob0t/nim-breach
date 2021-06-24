@@ -44,50 +44,17 @@ proc checkLine*(path, email: string): bool =
       break
       result = true
   result = false
-
-proc sortLineA*(path, line: string) =
-  ## used to sort the lines into a nested folder system.
-  ## line is a email:pass line.
-  ## level is how man chars out of thee email to use as the index
-  ## be sure to use the same level -1 as you do for the nesting!
-
+proc getPath*(line: string): string =
+  ## Used to return a path for a line in a nested folder
+  ##
+  ## Example: x = getPath("test@gmail.com")
   var
-    email: string
-    email_username: string
-    password: string
-    lineSplit1: string
-    lineSplit2: string
-    letters: seq[char]
-    # used to determin how far a line goes
     level_path: int
-    #file_path: string
     fpath: string
-    outLine: string
+    letters: seq[char]
 
-  if path.contains("/"):
-    fpath = path
-  else:
-    fpath = path & "/"
-  # lets see if its in email:pass or pass:email
-  try:
-    lineSplit1 = line.split(":")[0]
-    lineSplit2 = line.split(":")[1]
-    if lineSplit1.contains("@"):
-      email = linesplit1
-      email_username = email.split("@")[0].toLower()
-      password = linesplit2
-    else:
-      email = linesplit2
-      email_username = email.split("@")[0].toLower()
-      password = linesplit1
 
-    letters = toSeq(email_username.items)
-  except ValueError:
-    echo("invalid line: " & line)
-    # geting the level
-  except IndexDefect:
-    discard
-  # lets get the level
+  letters = toSeq(line.items)
   try:
     for letter in letters[0..2]:
       if isAlphaNumeric(letter) == true:
@@ -97,9 +64,7 @@ proc sortLineA*(path, line: string) =
   except IndexDefect:
     discard
 
-    # creating the path
-  # a path should look like this
-  # data/a/b/c/c.txt
+
   var letter: char
   if level_path == 0:
     fpath = fpath & "outliers.txt"
@@ -121,6 +86,45 @@ proc sortLineA*(path, line: string) =
       fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & ".txt"
     else:
       fpath = fpath & $letters[0] & "/" & $letters[1] & "/" & $letters[2] & "/" & "symbols.txt"
+
+proc sortLineA*(path, line: string) =
+  ## used to sort the lines into a nested folder system.
+  ## line is a email:pass line.
+  ## level is how man chars out of thee email to use as the index
+  ## be sure to use the same level -1 as you do for the nesting!
+
+  var
+    email: string
+    email_username: string
+    password: string
+    lineSplit1: string
+    lineSplit2: string
+    fpath: string
+    outLine: string
+
+  if path.contains("/"):
+    fpath = path
+  else:
+    fpath = path & "/"
+  # lets see if its in email:pass or pass:email
+  try:
+    lineSplit1 = line.split(":")[0]
+    lineSplit2 = line.split(":")[1]
+    if lineSplit1.contains("@"):
+      email = linesplit1
+      email_username = email.split("@")[0].toLower()
+      password = linesplit2
+    else:
+      email = linesplit2
+      email_username = email.split("@")[0].toLower()
+      password = linesplit1
+
+  except ValueError:
+    echo("invalid line: " & line)
+    # geting the level
+  except IndexDefect:
+    discard
+  fpath = getPath(email_username)
   outLine = email & ":" & password & "\n"
   try:
     if fileExists(fpath) == false:
@@ -237,10 +241,10 @@ when isMainModule:
   echo("creating folder forest")
   createNest("data-testing/")
   echo("creating split dir")
-  #createDir("/tmp/data/")
+  createDir("split-test")
   echo("testing split sqlite3")
-  #comboSortB("/tmp/data", "./test.txt")
-  #echo("testing nested folders")
-  #comboSortA("data-testing", "test.txt")
+  comboSortB("split-test", "./test.txt")
+  echo("testing nested folders")
+  comboSortA("data-testing", "test.txt")
   splitSqlite("data/", "test.txt", "data/tmp/")
   echo("all tests complete")
