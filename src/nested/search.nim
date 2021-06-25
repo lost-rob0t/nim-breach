@@ -2,10 +2,8 @@ import folders
 import os, sequtils, strutils
 import memfiles
 import ../sqlite/splitDb
-proc searchLine*(line, path: string): string =
-  var
-    fpath: string
-    email, domain, password: string
+proc searchEmail*(line, path: string): string =
+  var fpath: string
 
   var inputEmail = parseLine(line)
   echo("Searching: ", inputEmail.email)
@@ -20,8 +18,3 @@ proc searchLine*(line, path: string): string =
       result = l
       break
 
-when isMainModule:
-  try:
-    echo(searchLine("testin123@mail.com", "data-testing/"))
-  except OSError:
-    echo("not found")

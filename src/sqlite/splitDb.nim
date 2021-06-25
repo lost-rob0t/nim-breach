@@ -5,7 +5,7 @@ type
     email*: string
     password*: string
     domain*: string
-
+    username*: string
 
 func newEmail*(email: var string, password: string): Email =
   var
