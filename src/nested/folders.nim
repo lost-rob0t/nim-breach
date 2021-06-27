@@ -1,11 +1,6 @@
 import os, sequtils, strutils
 import memfiles
 import ../sqlite/splitDb
-type
-  Folder* =  ref object
-    depth*: int
-    path*: var string
-    letter*: string
 
 
 proc createNest*(path: string) =
