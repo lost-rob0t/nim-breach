@@ -192,7 +192,7 @@ proc sortLineB*(path, line: string) =
     let outFile = system.open(fpath, fmWrite)
     outFile.write(outLine)
     defer: outFile.close()
-proc comboSortA(path, input_file: string) =
+proc comboSortA*(path, input_file: string) =
   ## sorts a input file to a nested folder system
   ## A folder nest looks like data/a/b/c/d.txt
   ##
@@ -205,7 +205,7 @@ proc comboSortA(path, input_file: string) =
     except IndexDefect:
       echo(line)
 
-proc comboSortB(path, input_file: string) =
+proc comboSortB*(path, input_file: string) =
   ## Sort a input file into a set of files in <path> dir
   ## filename is based on the first letter of the email
   ## Example comboSortB("data", "test.txt")
