@@ -1,6 +1,5 @@
 import folders
-import os, sequtils, strutils
-import memfiles
+import os, sequtils, strutils, re, memfiles
 import ../sqlite/splitDb
 
 proc searchEmail*(line, path: string): string =
@@ -22,7 +21,7 @@ proc searchEmail*(line, path: string): string =
     if lineEmail.email == inputEmail.email:
       result = l
 
-proc searchDomain*(line, path: string): string =
+proc searchDomain*(line, path: string) =
   ## Search for emails from a domain from a nested folder system
   ## Line is domain
   ## Should be noted this can take a very long time to find all results!
@@ -34,11 +33,23 @@ proc searchDomain*(line, path: string): string =
 
   # lets walk the folder forest
   for file in walkDirRec(path & "/"):
-    var mfile = memfiles.open(file, mode = fmread)
-    defer: mfile.close()
-    for line in lines(mfile):
-      let lineDomain = parseLine(line.split(":")[0])
-      if lineDomain.domain == inputDomain.domain:
-        echo(lineDomain.domain)
+    if file.match re".*\.txt":
+      var mfile = memfiles.open(file, mode = fmread)
+      defer: mfile.close()
+      for line in lines(mfile):
+        let lineDomain = parseLine(line.split(":")[0])
+        if lineDomain.domain == inputDomain.domain:
+          echo(line)
+
+proc searchPassword*(password, path: string) =
+  # lets walk the folder forest
+  for file in walkDirRec(path & "/"):
+    if file.match re".*\.txt":
+      var mfile = memfiles.open(file, mode = fmread)
+      defer: mfile.close()
+      for line in lines(mfile):
+        let linePassword = parseLine(line)
+        if linePassword.password == password:
+          echo(line)
 when isMainModule:
   echo(searchEmail("sokalstefan@gmail.com", "data/"))
