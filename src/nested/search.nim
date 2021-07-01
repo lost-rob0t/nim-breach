@@ -6,6 +6,9 @@ import ../sqlite/splitDb
 proc searchEmail*(line, path: string): string =
   ## Search a email from a nested folder system
   ## Line is a email
+  ##
+  ## Example: searchDomain("test@gmail.com", "data/")
+
   var fpath: string
   var inputEmail = parseLine(line)
   echo("Searching: ", inputEmail.email)
@@ -19,6 +22,23 @@ proc searchEmail*(line, path: string): string =
     if lineEmail.email == inputEmail.email:
       result = l
 
+proc searchDomain*(line, path: string): string =
+  ## Search for emails from a domain from a nested folder system
+  ## Line is domain
+  ## Should be noted this can take a very long time to find all results!
+  ##
+  ## Example: searchDomain("gmail.com", "data/")
 
+  var inputDomain: Email
+  inputDomain = parseLine(line)
+
+  # lets walk the folder forest
+  for file in walkDirRec(path & "/"):
+    var mfile = memfiles.open(file, mode = fmread)
+    defer: mfile.close()
+    for line in lines(mfile):
+      let lineDomain = parseLine(line.split(":")[0])
+      if lineDomain.domain == inputDomain.domain:
+        echo(lineDomain.domain)
 when isMainModule:
   echo(searchEmail("sokalstefan@gmail.com", "data/"))
